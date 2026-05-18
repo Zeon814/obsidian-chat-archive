@@ -1,0 +1,4 @@
+interface:
+  display_name: "Obsidian Chat Archive"
+  short_description: "Archive Codex conversations into dated Obsidian notes."
+  default_prompt: "Use $obsidian-chat-archive to save this Codex conversation into my Obsidian vault."

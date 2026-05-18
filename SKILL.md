@@ -9,7 +9,7 @@ description: Archive Codex conversations as Markdown notes in an Obsidian vault.
 
 Save the current Codex conversation, or a concise reconstruction of it, as a Markdown file in the user's Obsidian vault.
 
-Skills are not background hooks. They cannot guarantee automatic execution for every conversation turn unless the surrounding Codex client invokes them. Treat "sync" as an explicit refresh operation: when the user asks to save or sync the conversation, rewrite the one conversation note with the latest visible transcript.
+Skills are not background hooks. They cannot guarantee automatic execution for every conversation turn unless the surrounding Codex client invokes them. For true ongoing sync, use `scripts/watch_codex_sessions.py` as an external watcher process.
 
 ## Defaults
 
@@ -70,6 +70,24 @@ If the previous note path is not visible but the user is saving or syncing the s
 ```powershell
 python scripts/save_chat.py --title '<title>' --content-file '<prepared-md-file>' --sync
 ```
+
+## True Sync Watcher
+
+For real ongoing sync without asking Codex to save each time, run the external watcher:
+
+```powershell
+python scripts/watch_codex_sessions.py
+```
+
+The watcher:
+
+- Monitors the latest `~/.codex/sessions/**/*.jsonl` session file.
+- Extracts visible `user` and `assistant` messages.
+- Filters system/developer/tool records by default.
+- Writes one stable Markdown note per session using the short session id in the filename.
+- Rewrites the same note whenever the session JSONL changes.
+
+Use `--session-file <path>` to pin a specific session, `--once` to sync once and exit, and `--include-bootstrap` to include AGENTS/environment bootstrap messages.
 
 ## Markdown Shape
 

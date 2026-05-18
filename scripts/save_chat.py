@@ -52,6 +52,24 @@ def resolve_vault(vault_arg: Optional[str]) -> Path:
     return Path(vault)
 
 
+def resolve_target_file(target_file: str, vault: Path, date: str) -> Path:
+    target = Path(target_file)
+    if not target.is_absolute():
+        target = vault / "codex" / date / target
+    if target.suffix.lower() != ".md":
+        target = target.with_suffix(".md")
+    return target
+
+
+def latest_note(day_dir: Path) -> Optional[Path]:
+    if not day_dir.exists():
+        return None
+    notes = [path for path in day_dir.glob("*.md") if path.is_file()]
+    if not notes:
+        return None
+    return max(notes, key=lambda path: path.stat().st_mtime)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(
         description="Save a Codex conversation markdown note into an Obsidian vault."
@@ -68,6 +86,18 @@ def main() -> int:
     )
     parser.add_argument("--content-file", help="Markdown content file to save.")
     parser.add_argument(
+        "--target-file",
+        help=(
+            "Existing note path to reuse. Relative paths resolve under "
+            "<vault>/codex/<date>."
+        ),
+    )
+    parser.add_argument(
+        "--reuse-latest",
+        action="store_true",
+        help="Reuse the most recently modified .md note in <vault>/codex/<date>.",
+    )
+    parser.add_argument(
         "--overwrite",
         action="store_true",
         help="Overwrite an existing note instead of appending a new section.",
@@ -79,8 +109,18 @@ def main() -> int:
     except ValueError as exc:
         raise SystemExit("--date must use YYYY-MM-DD format.") from exc
 
-    filename = slugify_title(args.title) + ".md"
-    destination = resolve_vault(args.vault) / "codex" / args.date / filename
+    vault = resolve_vault(args.vault)
+    day_dir = vault / "codex" / args.date
+    if args.target_file:
+        destination = resolve_target_file(args.target_file, vault, args.date)
+    elif args.reuse_latest:
+        destination = latest_note(day_dir)
+        if destination is None:
+            filename = slugify_title(args.title) + ".md"
+            destination = day_dir / filename
+    else:
+        filename = slugify_title(args.title) + ".md"
+        destination = day_dir / filename
     append_or_write(destination, read_content(args), args.overwrite)
     print(destination)
     return 0

@@ -19,6 +19,7 @@ Skills are not background hooks. They cannot guarantee automatic execution for e
 - Title source: use the user's requested title; otherwise derive a short filesystem-safe Chinese or English title from the conversation topic
 - Conversation file behavior: keep one Markdown file per Codex conversation. Reuse the same note path when saving the same active conversation again.
 - Existing file behavior: append by default in the script; when refreshing a complete conversation archive, use `--overwrite` so the one note stays current instead of accumulating duplicate transcripts.
+- Fidelity: default to full visible transcript for user and assistant messages. Do not summarize or omit normal conversation content unless the user asks for a compact summary.
 - Encoding: write Markdown as UTF-8 with BOM for better Windows and Obsidian compatibility.
 
 ## Workflow
@@ -34,7 +35,10 @@ Skills are not background hooks. They cannot guarantee automatic execution for e
 3. Compose the Markdown body.
    - Include YAML frontmatter with `title`, `date`, `source`, and `tags`.
    - Add a short summary section.
-   - Add the conversation transcript available in context.
+   - Add the full visible user and assistant transcript in chronological order.
+   - Preserve ordinary user messages and assistant answers verbatim or near-verbatim. Do not replace them with brief summaries just because they are long.
+   - Summarize only unavailable earlier context, extremely long tool outputs/logs, or repetitive command output.
+   - When anything is summarized or omitted, mark it explicitly with a note such as `[summary: tool output omitted for length]` or `[unavailable earlier context summarized]`.
    - If the full earlier transcript is unavailable, state that the note contains the visible/current context and include a faithful summary of missing context instead of inventing verbatim messages.
 4. Save with `scripts/save_chat.py`.
    - Pass the title with `--title`.
@@ -99,3 +103,10 @@ tags:
 ```
 
 Keep tool outputs concise. Summarize long logs instead of pasting noisy command output unless the user explicitly asks for a full transcript.
+
+## Fidelity Modes
+
+- Default mode: save the full visible conversation transcript. This includes long user prompts and long assistant answers.
+- Compact mode: summarize the conversation only when the user explicitly asks for a summary, brief note, digest, or compact archive.
+- Tool output policy: tool outputs may be summarized by default when they are long, noisy, repetitive, or not useful as prose. Keep short important outputs verbatim.
+- Missing context policy: do not invent missing transcript. Clearly label any reconstructed or summarized earlier context.

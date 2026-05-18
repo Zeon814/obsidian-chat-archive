@@ -9,7 +9,7 @@ description: Archive Codex conversations as Markdown notes in an Obsidian vault.
 
 Save the current Codex conversation, or a concise reconstruction of it, as a Markdown file in the user's Obsidian vault.
 
-Skills are not background hooks. They cannot guarantee automatic execution for every conversation unless the surrounding Codex client invokes them. When the user wants ongoing capture, explain this boundary briefly and then save the conversation that is available in context.
+Skills are not background hooks. They cannot guarantee automatic execution for every conversation turn unless the surrounding Codex client invokes them. Treat "sync" as an explicit refresh operation: when the user asks to save or sync the conversation, rewrite the one conversation note with the latest visible transcript.
 
 ## Defaults
 
@@ -18,7 +18,7 @@ Skills are not background hooks. They cannot guarantee automatic execution for e
 - Date source: local current date unless the user gives a date
 - Title source: use the user's requested title; otherwise derive a short filesystem-safe Chinese or English title from the conversation topic
 - Conversation file behavior: keep one Markdown file per Codex conversation. Reuse the same note path when saving the same active conversation again.
-- Existing file behavior: append by default in the script; when refreshing a complete conversation archive, use `--overwrite` so the one note stays current instead of accumulating duplicate transcripts.
+- Existing file behavior: append by default in the script; when refreshing a complete conversation archive, use `--sync` so the one note stays current instead of accumulating duplicate transcripts.
 - Fidelity: default to full visible transcript for user and assistant messages. Do not summarize or omit normal conversation content unless the user asks for a compact summary.
 - Encoding: write Markdown as UTF-8 with BOM for better Windows and Obsidian compatibility.
 
@@ -26,7 +26,7 @@ Skills are not background hooks. They cannot guarantee automatic execution for e
 
 1. Determine the target note.
    - If this active conversation was already saved and the previous saved path is visible in context, reuse that exact path with `--target-file`.
-   - If the user asks to save again in the same active conversation but no previous path is visible, use `--reuse-latest` to reuse the most recently modified note in `codex/YYYY-MM-DD`.
+   - If the user asks to save or sync again in the same active conversation but no previous path is visible, use `--sync`. It reuses an existing same-title note, then the latest note in `codex/YYYY-MM-DD`, and overwrites it.
    - If the user explicitly gives a different title and clearly wants a separate note, create a new file.
 2. Determine the note title.
    - Prefer an explicit title from the user.
@@ -44,8 +44,8 @@ Skills are not background hooks. They cannot guarantee automatic execution for e
    - Pass the title with `--title`.
    - Pass `--vault` unless `OBSIDIAN_VAULT` is already set in the environment.
    - Use `--content-file` for prepared Markdown content.
-   - Use `--target-file '<previous-note-path>' --overwrite` when the active conversation has already been saved.
-   - Use `--reuse-latest --overwrite` when saving again in the same active conversation and no previous path is visible.
+   - Use `--target-file '<previous-note-path>' --sync` when the active conversation has already been saved.
+   - Use `--sync` when saving again in the same active conversation and no previous path is visible.
    - On Windows, avoid piping non-ASCII Markdown through PowerShell stdin because console encoding can replace Chinese text with question marks before Python receives it.
 5. Report the final note path.
 
@@ -62,13 +62,13 @@ The script creates missing directories and prints the saved file path. It also s
 To refresh the same conversation note:
 
 ```powershell
-python scripts/save_chat.py --title '<title>' --content-file '<prepared-md-file>' --target-file '<existing-note.md>' --overwrite
+python scripts/save_chat.py --title '<title>' --content-file '<prepared-md-file>' --target-file '<existing-note.md>' --sync
 ```
 
-If the previous note path is not visible but the user is saving the same active conversation again:
+If the previous note path is not visible but the user is saving or syncing the same active conversation again:
 
 ```powershell
-python scripts/save_chat.py --title '<title>' --content-file '<prepared-md-file>' --reuse-latest --overwrite
+python scripts/save_chat.py --title '<title>' --content-file '<prepared-md-file>' --sync
 ```
 
 ## Markdown Shape

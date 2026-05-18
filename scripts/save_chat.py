@@ -70,6 +70,10 @@ def latest_note(day_dir: Path) -> Optional[Path]:
     return max(notes, key=lambda path: path.stat().st_mtime)
 
 
+def titled_note(day_dir: Path, title: str) -> Path:
+    return day_dir / (slugify_title(title) + ".md")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(
         description="Save a Codex conversation markdown note into an Obsidian vault."
@@ -98,6 +102,14 @@ def main() -> int:
         help="Reuse the most recently modified .md note in <vault>/codex/<date>.",
     )
     parser.add_argument(
+        "--sync",
+        action="store_true",
+        help=(
+            "Refresh one conversation note. Reuses --target-file, then an existing "
+            "same-title note, then the latest note for the date, and overwrites it."
+        ),
+    )
+    parser.add_argument(
         "--overwrite",
         action="store_true",
         help="Overwrite an existing note instead of appending a new section.",
@@ -113,15 +125,18 @@ def main() -> int:
     day_dir = vault / "codex" / args.date
     if args.target_file:
         destination = resolve_target_file(args.target_file, vault, args.date)
+    elif args.sync:
+        same_title = titled_note(day_dir, args.title)
+        destination = same_title if same_title.exists() else latest_note(day_dir)
+        if destination is None:
+            destination = same_title
     elif args.reuse_latest:
         destination = latest_note(day_dir)
         if destination is None:
-            filename = slugify_title(args.title) + ".md"
-            destination = day_dir / filename
+            destination = titled_note(day_dir, args.title)
     else:
-        filename = slugify_title(args.title) + ".md"
-        destination = day_dir / filename
-    append_or_write(destination, read_content(args), args.overwrite)
+        destination = titled_note(day_dir, args.title)
+    append_or_write(destination, read_content(args), args.overwrite or args.sync)
     print(destination)
     return 0
 
